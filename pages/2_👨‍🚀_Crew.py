@@ -347,7 +347,7 @@ def visible_panel(profile):
 def fetch_crew():
     try:
         response = requests.get(
-            "http://api.open-notify.org/astros.json",
+            "https://api.open-notify.org/astros.json",
             timeout=8,
         )
         response.raise_for_status()
