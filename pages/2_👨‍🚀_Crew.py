@@ -1,10 +1,11 @@
 import random
 import requests
 import streamlit as st
-
+import time
 from utils.styles import load_css
 from components.hero import render_header
 from components.cards import info_card, big_number_card
+from datetime import datetime
 
 st.set_page_config(
     page_title="Crew · OrbitWatch",
@@ -344,16 +345,30 @@ def visible_panel(profile):
 # ---------------------------------------------------
 
 @st.cache_data(ttl=3600)
+
+
 def fetch_crew():
-    try:
-        response = requests.get(
-            "https://api.open-notify.org/astros.json",
-            timeout=8,
-        )
-        response.raise_for_status()
-        return response.json().get("people", [])
-    except requests.exceptions.RequestException:
-        return None
+    cached = st.session_state.get("_crew_cache")
+    if cached and (datetime.now() - cached["time"]).seconds < 3600:
+        return cached["data"]
+
+    for attempt in range(2):
+        try:
+            response = requests.get(
+                "https://api.open-notify.org/astros.json",
+                timeout=15,
+            )
+            response.raise_for_status()
+            people = response.json().get("people", [])
+            if people:
+                st.session_state._crew_cache = {"data": people, "time": datetime.now()}
+                return people
+        except requests.exceptions.RequestException:
+            if attempt == 0:
+                time.sleep(1.5)
+                continue
+            return None
+    return None
 
 
 crew = fetch_crew()
