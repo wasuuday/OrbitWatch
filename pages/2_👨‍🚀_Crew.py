@@ -1,11 +1,11 @@
 import random
-import requests
+
 import streamlit as st
 import time
 from utils.styles import load_css
 from components.hero import render_header
 from components.cards import info_card, big_number_card
-from datetime import datetime
+
 
 st.set_page_config(
     page_title="Crew · OrbitWatch",
@@ -245,7 +245,28 @@ ABSURD_NOTES = [
     "Nobody panic. Everything appears to be exactly where it should be.",
     "One rubber duck is statistically closer to space than expected.",
 ]
+# Manually verified snapshot — last checked around July 23, 2026.
+# Refresh this occasionally by checking NASA's ISS blog and Wikipedia's
+# "Expedition" / "Tiangong space station" pages for the current crew.
+CURRENT_CREW = [
+    {"craft": "ISS", "name": "Jessica Meir"},
+    {"craft": "ISS", "name": "Jack Hathaway"},
+    {"craft": "ISS", "name": "Sophie Adenot"},
+    {"craft": "ISS", "name": "Andrey Fedyaev"},
+    {"craft": "ISS", "name": "Pyotr Dubrov"},
+    {"craft": "ISS", "name": "Anna Kikina"},
+    {"craft": "ISS", "name": "Anil Menon"},
+    {"craft": "Tiangong", "name": "Zhu Yangzhu"},
+    {"craft": "Tiangong", "name": "Zhang Zhiyuan"},
+    {"craft": "Tiangong", "name": "Lai Ka-ying"},
+]
 
+CREW_NOTE = (
+    "This list was last verified by an actual human checking actual sources. "
+    "By the time you're reading this, a couple of these folks might already be back on Earth, "
+    "sipping tea and re-learning what gravity feels like. Crew rotations happen every few months — "
+    "consider this 'recently true' rather than 'true this second.'"
+)
 
 import hashlib
 
@@ -344,48 +365,18 @@ def visible_panel(profile):
 # API
 # ---------------------------------------------------
 
-@st.cache_data(ttl=3600)
+crew = CURRENT_CREW
 
-
-def fetch_crew():
-    cached = st.session_state.get("_crew_cache")
-    if cached and (datetime.now() - cached["time"]).seconds < 3600:
-        return cached["data"]
-
-    for attempt in range(2):
-        try:
-            response = requests.get(
-                "https://api.open-notify.org/astros.json",
-                timeout=15,
-            )
-            response.raise_for_status()
-            people = response.json().get("people", [])
-            if people:
-                st.session_state._crew_cache = {"data": people, "time": datetime.now()}
-                return people
-        except requests.exceptions.RequestException:
-            if attempt == 0:
-                time.sleep(1.5)
-                continue
-            return None
-    return None
-
-
-crew = fetch_crew()
-
-if crew is None:
-    st.markdown(
-        """
+st.markdown(
+    f"""
 <div class="ow-mission-note">
-Mission Control couldn't reach the crew manifest.
-<br><br>
-They're probably still up there.
-The API just decided to take the day off.
+<div class="ow-mission-note-label">📋 Crew Manifest</div>
+
+{CREW_NOTE}
 </div>
 """,
-        unsafe_allow_html=True,
-    )
-    st.stop()
+    unsafe_allow_html=True,
+)
 
 # ---------------------------------------------------
 # Hero Card
